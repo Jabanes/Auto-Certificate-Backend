@@ -1,0 +1,97 @@
+{
+  "field1": {
+    "pos": [
+      82,
+      234
+    ],
+    "margins": {
+      "left": 36,
+      "right": 36,
+      "top": 36,
+      "bottom": 36
+    },
+    "font": "Assistant",
+    "font_size": 64,
+    "bold": true,
+    "italic": false,
+    "fill": "#a89b82",
+    "align": "center",
+    "sample_text": "ארז חבני"
+  },
+  "field2": {
+    "pos": [
+      243,
+      190
+    ],
+    "margins": {
+      "left": 36,
+      "right": 36,
+      "top": 36,
+      "bottom": 36
+    },
+    "font": "Assistant Light",
+    "font_size": 30,
+    "bold": false,
+    "italic": false,
+    "fill": "#000000",
+    "align": "center",
+    "sample_text": "וזאת לתעודה כי"
+  },
+  "field3": {
+    "pos": [
+      233,
+      349
+    ],
+    "margins": {
+      "left": 36,
+      "right": 36,
+      "top": 36,
+      "bottom": 36
+    },
+    "font": "Assistant Light",
+    "font_size": 28,
+    "bold": false,
+    "italic": false,
+    "fill": "#000000",
+    "align": "center",
+    "sample_text": "ת.ז: 213900467"
+  },
+  "field4": {
+    "pos": [
+      121,
+      399
+    ],
+    "margins": {
+      "left": 36,
+      "right": 36,
+      "top": 36,
+      "bottom": 36
+    },
+    "font": "Assistant Light",
+    "font_size": 28,
+    "bold": true,
+    "italic": false,
+    "fill": "#000000",
+    "align": "center",
+    "sample_text": "סיים בהצלחה\nקורס ניהול רשתות ואבטחת מידע\nניהול פדגוגי יונתן גויכמן\n\nבהיקף של 170 שעות לימוד אקדמיות\nכולל פרוייקט גמר\n\nבין התאריכים 19/06/24-/20/11/24\nחשון התשפ\"ה | נובמבר 2024"
+  },
+  "field5": {
+    "pos": [
+      568,
+      992
+    ],
+    "margins": {
+      "left": 36,
+      "right": 36,
+      "top": 36,
+      "bottom": 36
+    },
+    "font": "Arial",
+    "font_size": 24,
+    "bold": false,
+    "italic": false,
+    "fill": "black",
+    "align": "right",
+    "sample_text": "123456"
+  }
+}
