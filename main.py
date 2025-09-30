@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Tuple, Dict, Any
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import io, zipfile, os, json
 import arabic_reshaper
 from bidi.algorithm import get_display
@@ -20,18 +20,37 @@ class BatchRequest(BaseModel):
 
 TEMPLATE_PATH = os.getenv("TEMPLATE_PATH", "certificate-template.png")
 
+
 def load_fields_config(path: str = "fields_config.json") -> Dict[str, Dict[str, Any]]:
     """
-    Load fields configuration from a JSON file.
+    Load fields configuration from a JSON file and add default glow effect settings if missing.
     """
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        config = json.load(f)
 
-config_file = os.getenv("FIELDS_CONFIG", "fields_config.json")
-FIELDS_CONFIG = load_fields_config(config_file)
-print("Loaded config from:", os.path.abspath(config_file))
+    default_glow = {
+        "enabled": False,
+        "color": "#000000",
+        "opacity": 0.4,
+        "radius": 6
+    }
+
+    for field in config.values():
+        if "glow" not in field:
+            field["glow"] = default_glow.copy()
+
+    return config
 
 
+def get_fields_config() -> Dict[str, Dict[str, Any]]:
+    """
+    Always load the latest config on each request.
+    """
+    config_file = os.getenv("FIELDS_CONFIG", "fields_config.json")
+    return load_fields_config(config_file)
+
+
+# ----------- Font Loader -----------
 
 def _load_font(font_file: str, size: int, bold: bool = False, italic: bool = False) -> ImageFont.FreeTypeFont:
     font_name, font_ext = os.path.splitext(font_file)
@@ -60,11 +79,13 @@ def _load_font(font_file: str, size: int, bold: bool = False, italic: bool = Fal
     return ImageFont.load_default()
 
 
+# ----------- Renderer -----------
+
 def render_pdf_for_student(stu: Dict[str, Any], fields_config: Dict[str, Dict[str, Any]]) -> bytes:
     """
     Render a single certificate to PDF bytes, fully in-memory.
     """
-    img = Image.open(TEMPLATE_PATH).convert("RGB")
+    img = Image.open(TEMPLATE_PATH).convert("RGBA")  # Use RGBA for transparency
     draw = ImageDraw.Draw(img)
 
     for key, value in stu.items():
@@ -85,26 +106,50 @@ def render_pdf_for_student(stu: Dict[str, Any], fields_config: Dict[str, Dict[st
 
         x, y = cfg["pos"]
 
+        # --- Text alignment ---
         if cfg.get("align") in ("center", "right"):
             bbox = draw.textbbox((0, 0), bidi_text, font=font)
             w = bbox[2] - bbox[0]
             if cfg["align"] == "center":
-                x = x - w // 2
+                x -= w // 2
             elif cfg["align"] == "right":
-                x = x - w
+                x -= w
 
+        # --- Glow Effect ---
+        glow_cfg = cfg.get("glow")
+        if glow_cfg and glow_cfg.get("enabled", False):
+            radius = glow_cfg.get("radius", 5)
+            if radius > 0:
+                glow_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+                glow_draw = ImageDraw.Draw(glow_layer)
+
+                glow_draw.text((x, y), bidi_text, font=font, fill=glow_cfg.get("color", "#000000"))
+
+                glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(radius))
+
+                opacity = glow_cfg.get("opacity", 0.5)
+                if opacity < 1.0:
+                    alpha = glow_layer.getchannel('A')
+                    alpha = alpha.point(lambda i: i * opacity)
+                    glow_layer.putalpha(alpha)
+                
+                img = Image.alpha_composite(img, glow_layer)
+                draw = ImageDraw.Draw(img)
+
+        # --- Main Text ---
         draw.text((x, y), bidi_text, font=font, fill=cfg["fill"])
 
+    img = img.convert("RGB")
+    
     buf = io.BytesIO()
     img.save(buf, format="PDF")
     buf.seek(0)
     return buf.read()
 
 
+# ----------- Zip Builder -----------
+
 def build_zip(files: List[Tuple[str, bytes]]) -> bytes:
-    """
-    Create a ZIP (in-memory) from a list of (filename, content_bytes).
-    """
     out = io.BytesIO()
     with zipfile.ZipFile(out, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         for filename, content in files:
@@ -117,11 +162,8 @@ def build_zip(files: List[Tuple[str, bytes]]) -> bytes:
 
 @app.post("/generate-certificate")
 def generate_certificate(data: Dict[str, Any]):
-    """
-    Single-student endpoint (kept for testing/backwards-compatibility).
-    Uses predefined FIELDS_CONFIG for rendering.
-    """
-    pdf_bytes = render_pdf_for_student(data, FIELDS_CONFIG)
+    fields_config = get_fields_config()  # 🔄 Always fresh
+    pdf_bytes = render_pdf_for_student(data, fields_config)
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
@@ -131,18 +173,11 @@ def generate_certificate(data: Dict[str, Any]):
 
 @app.post("/generate-certificates-batch")
 def generate_certificates_batch(payload: BatchRequest):
-    """
-    Batch endpoint:
-    - Accepts JSON with a list of students (field1, field2, ...)
-    - Renders a PDF per student in memory
-    - Packs all PDFs into a ZIP (in memory)
-    - Returns the ZIP to the caller (n8n)
-    """
+    fields_config = get_fields_config()  # 🔄 Always fresh
     files: List[Tuple[str, bytes]] = []
 
     for stu in payload.students:
-        pdf_bytes = render_pdf_for_student(stu, FIELDS_CONFIG)
-        # Default filename convention uses field1 and field2 if present
+        pdf_bytes = render_pdf_for_student(stu, fields_config)
         fname = f'certificate-{stu.get("field1","")}-{stu.get("field2","")}.pdf'
         files.append((fname, pdf_bytes))
 
@@ -153,4 +188,15 @@ def generate_certificates_batch(payload: BatchRequest):
         io.BytesIO(zip_bytes),
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{zip_name}"'},
+    )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app", 
+        host="0.0.0.0", 
+        port=8000, 
+        reload=True, 
+        reload_dirs=["."]
     )

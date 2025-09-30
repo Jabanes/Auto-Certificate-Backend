@@ -83,6 +83,12 @@ def extract_textbox_properties(pptx_path: str, output_json: str = None):
                 "italic": italic,
                 "fill": font_color,
                 "align": alignment,
+                "glow": {
+                    "enabled": False,
+                    "color": "#000000",
+                    "opacity": 0.4,
+                    "radius": 6
+                },
                 "sample_text": text,
             }
 

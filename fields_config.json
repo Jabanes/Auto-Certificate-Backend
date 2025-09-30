@@ -16,6 +16,12 @@
     "italic": false,
     "fill": "#a89b82",
     "align": "center",
+    "glow": {
+      "enabled": false,
+      "color": "#000000",
+      "opacity": 0.4,
+      "radius": 6
+    },
     "sample_text": "ארז חבני"
   },
   "field2": {
@@ -35,6 +41,12 @@
     "italic": false,
     "fill": "#000000",
     "align": "center",
+    "glow": {
+      "enabled": false,
+      "color": "#000000",
+      "opacity": 0.4,
+      "radius": 6
+    },
     "sample_text": "וזאת לתעודה כי"
   },
   "field3": {
@@ -54,6 +66,12 @@
     "italic": false,
     "fill": "#000000",
     "align": "center",
+    "glow": {
+      "enabled": false,
+      "color": "#000000",
+      "opacity": 0.4,
+      "radius": 6
+    },
     "sample_text": "ת.ז: 213900467"
   },
   "field4": {
@@ -73,6 +91,12 @@
     "italic": false,
     "fill": "#000000",
     "align": "center",
+    "glow": {
+      "enabled": false,
+      "color": "#000000",
+      "opacity": 0.4,
+      "radius": 6
+    },
     "sample_text": "סיים בהצלחה\nקורס ניהול רשתות ואבטחת מידע\nניהול פדגוגי יונתן גויכמן\n\nבהיקף של 170 שעות לימוד אקדמיות\nכולל פרוייקט גמר\n\nבין התאריכים 19/06/24-/20/11/24\nחשון התשפ\"ה | נובמבר 2024"
   },
   "field5": {
@@ -92,6 +116,12 @@
     "italic": false,
     "fill": "black",
     "align": "right",
+    "glow": {
+      "enabled": false,
+      "color": "#000000",
+      "opacity": 0.4,
+      "radius": 6
+    },
     "sample_text": "123456"
   }
 }
