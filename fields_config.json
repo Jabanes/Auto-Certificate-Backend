@@ -1,82 +1,28 @@
 {
   "field1": {
     "pos": [
-      82,
-      234
+      380,
+      260
     ],
-    "margins": {
-      "left": 36,
-      "right": 36,
-      "top": 36,
-      "bottom": 36
-    },
+    "box_width": 720,
     "font": "Assistant",
-    "font_size": 64,
+    "font_size": 100,
+    "min_font_size": 40,
     "bold": true,
     "italic": false,
     "fill": "#a89b82",
     "align": "center",
     "glow": {
-      "enabled": false,
+      "enabled": true,
       "color": "#000000",
-      "opacity": 0.4,
+      "opacity": 0.2,
       "radius": 6
     },
     "sample_text": "ארז חבני"
   },
   "field2": {
     "pos": [
-      243,
-      190
-    ],
-    "margins": {
-      "left": 36,
-      "right": 36,
-      "top": 36,
-      "bottom": 36
-    },
-    "font": "Assistant Light",
-    "font_size": 30,
-    "bold": false,
-    "italic": false,
-    "fill": "#000000",
-    "align": "center",
-    "glow": {
-      "enabled": false,
-      "color": "#000000",
-      "opacity": 0.4,
-      "radius": 6
-    },
-    "sample_text": "וזאת לתעודה כי"
-  },
-  "field3": {
-    "pos": [
-      233,
-      349
-    ],
-    "margins": {
-      "left": 36,
-      "right": 36,
-      "top": 36,
-      "bottom": 36
-    },
-    "font": "Assistant Light",
-    "font_size": 28,
-    "bold": false,
-    "italic": false,
-    "fill": "#000000",
-    "align": "center",
-    "glow": {
-      "enabled": false,
-      "color": "#000000",
-      "opacity": 0.4,
-      "radius": 6
-    },
-    "sample_text": "ת.ז: 213900467"
-  },
-  "field4": {
-    "pos": [
-      121,
+      400,
       399
     ],
     "margins": {
@@ -99,10 +45,10 @@
     },
     "sample_text": "סיים בהצלחה\nקורס ניהול רשתות ואבטחת מידע\nניהול פדגוגי יונתן גויכמן\n\nבהיקף של 170 שעות לימוד אקדמיות\nכולל פרוייקט גמר\n\nבין התאריכים 19/06/24-/20/11/24\nחשון התשפ\"ה | נובמבר 2024"
   },
-  "field5": {
+  "field3": {
     "pos": [
-      568,
-      992
+      650,
+      1030
     ],
     "margins": {
       "left": 36,
@@ -111,11 +57,11 @@
       "bottom": 36
     },
     "font": "Arial",
-    "font_size": 24,
+    "font_size": 100,
     "bold": false,
     "italic": false,
     "fill": "black",
-    "align": "right",
+    "align": "center",
     "glow": {
       "enabled": false,
       "color": "#000000",

@@ -93,16 +93,16 @@ def render_pdf_for_student(stu: Dict[str, Any], fields_config: Dict[str, Dict[st
             continue
 
         cfg = fields_config[key]
-        font = _load_font(
-            cfg["font"],
-            cfg.get("font_size", 24),
-            bold=cfg.get("bold", False),
-            italic=cfg.get("italic", False)
-        )
+
+        
         
         text = str(value)
+        if key == "field2":
+            text = "ת.ז: " + text
+            
         reshaped_text = arabic_reshaper.reshape(text)
         bidi_text = get_display(reshaped_text)
+        font = fit_font_to_box(draw, bidi_text, cfg)
 
         x, y = cfg["pos"]
 
@@ -145,6 +145,41 @@ def render_pdf_for_student(stu: Dict[str, Any], fields_config: Dict[str, Dict[st
     img.save(buf, format="PDF")
     buf.seek(0)
     return buf.read()
+
+
+def fit_font_to_box(draw, text: str, cfg: Dict[str, Any]) -> ImageFont.FreeTypeFont:
+    """
+    Dynamically adjust font size so text fits within the field's box width,
+    respecting optional margins.
+    """
+    max_font_size = cfg.get("font_size", 24)
+    min_font_size = cfg.get("min_font_size", 12)
+    font_file = cfg["font"]
+
+    # Base box width
+    box_width = cfg.get("box_width")
+    if not box_width:
+        return _load_font(font_file, max_font_size, cfg.get("bold", False), cfg.get("italic", False))
+
+    # Apply margins if provided
+    margins = cfg.get("margins", {})
+    left_margin = margins.get("left", 0)
+    right_margin = margins.get("right", 0)
+    effective_width = box_width - left_margin - right_margin
+
+    font_size = max_font_size
+    while font_size >= min_font_size:
+        font = _load_font(font_file, font_size, cfg.get("bold", False), cfg.get("italic", False))
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+
+        if text_width <= effective_width:
+            return font  # ✅ Found a fitting font size
+
+        font_size -= 2
+
+    return _load_font(font_file, min_font_size, cfg.get("bold", False), cfg.get("italic", False))
+
 
 
 # ----------- Zip Builder -----------
