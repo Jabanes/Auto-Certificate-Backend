@@ -225,6 +225,10 @@ def generate_certificates_batch(payload: BatchRequest):
         headers={"Content-Disposition": f'attachment; filename="{zip_name}"'},
     )
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "message": "Deployment test successful!"}
+
 
 if __name__ == "__main__":
     import uvicorn
