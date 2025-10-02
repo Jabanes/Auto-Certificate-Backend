@@ -21,9 +21,19 @@ jobs:
       - name: Deploy on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          set -e
-          cd /root/Auto-Certificate-Backend
-          git pull origin main
-          docker compose build fastapi
-          docker compose up -d fastapi
+            set -e
+            # Navigate to the backend directory
+            cd /root/Auto-Certificate-Backend
+
+            # Pull the latest changes from main branch
+            git pull origin main
+
+            # Rebuild only the fastapi service with the new code
+            docker compose build fastapi
+
+            # Restart the fastapi container (detached mode)
+            docker compose up -d fastapi
+
+            # Cleanup unused images to save disk space
+            docker image prune -f
           EOF
