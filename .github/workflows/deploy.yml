@@ -22,7 +22,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           set -e
-          cd /root/Auto-Certificate
+          cd /root/Auto-Certificate-Backend
           git pull origin main
           docker compose build fastapi
           docker compose up -d fastapi
