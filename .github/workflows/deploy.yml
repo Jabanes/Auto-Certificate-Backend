@@ -23,7 +23,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             set -e
             # Navigate to the backend directory
-            cd /root/Auto-Certificate-Backend
+            cd /root/backend/Auto-Advertisment-Backend
 
             # Pull the latest changes from main branch
             git pull origin main
