@@ -30,9 +30,9 @@
       "right": 36,
       "top": 36,
       "bottom": 36
-    },
+    },  
     "font": "Assistant Light",
-    "font_size": 28,
+    "font_size": 30,
     "bold": true,
     "italic": false,
     "fill": "#000000",
