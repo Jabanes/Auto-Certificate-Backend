@@ -6,6 +6,9 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import io, zipfile, os, json
 import arabic_reshaper
 from bidi.algorithm import get_display
+from fastapi import UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
+import io, os
 
 app = FastAPI()
 
@@ -229,6 +232,54 @@ def generate_certificates_batch(payload: BatchRequest):
 def health_check():
     return {"status": "ok", "message": "Deployment test successful!"}
 
+# ----------- Template management endpoints -----------
+
+@app.get("/template")
+def get_template():
+    """
+    Returns the current certificate template as an image file for preview.
+    Uses FileResponse instead of StreamingResponse to avoid 'closed file' issues.
+    """
+    if not os.path.exists(TEMPLATE_PATH):
+        raise HTTPException(status_code=404, detail="Template file not found")
+
+    return FileResponse(
+        path=TEMPLATE_PATH,
+        media_type="image/png",
+        filename=os.path.basename(TEMPLATE_PATH)
+    )
+
+
+@app.post("/template")
+async def upload_new_template(file: UploadFile = File(...)):
+    """
+    Upload a new certificate template (PNG or JPG) and replace the old one.
+    The file name stays the same (certificate-template.png).
+    """
+    allowed_types = ["image/png", "image/jpeg"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Only PNG or JPG files are allowed")
+
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:  # 10 MB limit
+        raise HTTPException(status_code=400, detail="File too large (max 10MB)")
+
+    # Validate image can actually be opened
+    try:
+        img = Image.open(io.BytesIO(contents))
+        img.verify()  # Just validates integrity, doesn’t load pixels
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid or corrupted image file")
+
+    # Normalize to PNG (convert JPG to PNG)
+    img = Image.open(io.BytesIO(contents)).convert("RGBA")
+    temp_path = TEMPLATE_PATH + ".tmp"
+    img.save(temp_path, format="PNG")
+
+    # Replace old file
+    os.replace(temp_path, TEMPLATE_PATH)
+
+    return {"status": "success", "message": "Template updated successfully"}
 
 if __name__ == "__main__":
     import uvicorn
