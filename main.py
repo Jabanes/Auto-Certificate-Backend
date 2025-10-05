@@ -9,9 +9,20 @@ from bidi.algorithm import get_display
 from fastapi import UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 import io, os
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# Allow requests from your GitHub Pages site
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://jabanes.github.io", 
+    ],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # ----------- Data models -----------
 
 class BatchRequest(BaseModel):
