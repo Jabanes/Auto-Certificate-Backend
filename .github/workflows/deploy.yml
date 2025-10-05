@@ -22,18 +22,10 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             set -e
-            # Navigate to the backend directory
-            cd /root/backend/Auto-Advertisment-Backend
-
-            # Pull the latest changes from main branch
-            git pull origin main
-
-            # Rebuild only the fastapi service with the new code
-            docker compose build fastapi
-
-            # Restart the fastapi container (detached mode)
-            docker compose up -d fastapi
-
-            # Cleanup unused images to save disk space
+            cd /root/backend/Auto-Certificate-Backend
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose build --no-cache fastapi
+            docker compose up -d --force-recreate fastapi
             docker image prune -f
           EOF
