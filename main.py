@@ -10,6 +10,9 @@ from fastapi import UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 import io, os
 from fastapi.middleware.cors import CORSMiddleware
+import zipfile
+import io, os, base64, pandas as pd, zipfile
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -301,3 +304,62 @@ if __name__ == "__main__":
         reload=True, 
         reload_dirs=["."]
     )
+
+
+@app.post("/distribute-certificates")
+async def distribute_certificates(
+    excel: UploadFile = File(...),
+    zip_file: UploadFile = File(...),
+):
+    """
+    Receives an Excel file (with columns: name, email) and a ZIP file
+    containing certificates (PDFs named after the student name).
+    Returns JSON array {name, email, filename, file_base64}.
+    """
+ 
+
+    # --- Validate Excel ---
+    if not excel.filename.endswith((".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Excel file must be .xlsx or .xls")
+
+    # --- Validate ZIP ---
+    if not zip_file.filename.endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Must upload a ZIP file of certificates")
+
+    # Read Excel
+    excel_bytes = await excel.read()
+    df = pd.read_excel(io.BytesIO(excel_bytes))
+    if "name" not in df.columns or "email" not in df.columns:
+        raise HTTPException(status_code=400, detail="Excel must include 'name' and 'email' columns")
+
+    # Read ZIP contents
+    zip_bytes = await zip_file.read()
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as z:
+        files = {
+            os.path.splitext(os.path.basename(f))[0].strip().lower(): z.read(f)
+            for f in z.namelist()
+            if f.endswith(".pdf")
+        }
+
+    # Match each student
+    results = []
+    for _, row in df.iterrows():
+        key = str(row["name"]).strip().lower()
+        email = str(row["email"]).strip()
+        pdf_bytes = files.get(key)
+        if pdf_bytes:
+            file_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+            results.append({
+                "name": key,
+                "email": email,
+                "filename": f"{key}.pdf",
+                "file_base64": file_b64
+            })
+        else:
+            results.append({
+                "name": key,
+                "email": email,
+                "status": "missing_certificate"
+            })
+
+    return {"students": results}
