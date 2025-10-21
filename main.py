@@ -312,9 +312,10 @@ async def distribute_certificates(
     zip_file: UploadFile = File(...),
 ):
     """
-    Match certificates to students using ID numbers.
-    Each PDF in the ZIP should contain the student's ID in its filename.
-    Example: '301112345_אדר.pdf' or '301112345.pdf'
+    Matches certificates (ZIP of PDFs) to students using ID numbers.
+    Excel file can contain any number of columns — only 'ID' and 'Email' are required,
+    detected automatically (supports Hebrew or English column names).
+    Example PDF filenames: '301112345_אדר.pdf' or '301112345.pdf'
     """
 
     import io, os, base64, pandas as pd, zipfile, re
@@ -330,45 +331,81 @@ async def distribute_certificates(
 
     # --- Read Excel ---
     excel_bytes = await excel.read()
-    df = pd.read_excel(io.BytesIO(excel_bytes))
+    try:
+        df = pd.read_excel(io.BytesIO(excel_bytes))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error reading Excel file: {e}")
 
-    # Validate columns
-    lower_cols = [c.lower() for c in df.columns]
-    if "id" not in lower_cols or "email" not in lower_cols:
-        raise HTTPException(status_code=400, detail="Excel must include 'id' and 'email' columns")
+    # --- Normalize column names ---
+    normalized_cols = {str(c).strip().lower(): c for c in df.columns}
+    lowered = list(normalized_cols.keys())
+
+    # --- Try to detect ID column (Hebrew or English) ---
+    id_col_key = next(
+        (
+            c
+            for c in lowered
+            if re.search(r"(id|ת.?ז|תעודת.?זהות)", c)
+        ),
+        None,
+    )
+
+    # --- Try to detect Email column (Hebrew or English) ---
+    email_col_key = next(
+        (
+            c
+            for c in lowered
+            if re.search(r"(mail|אימ.?ייל|דוא.?ל|email)", c)
+        ),
+        None,
+    )
+
+    if not id_col_key or not email_col_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Excel must include columns for ID (ת.ז) and Email (אימייל)"
+        )
+
+    id_col = normalized_cols[id_col_key]
+    email_col = normalized_cols[email_col_key]
 
     # --- Read ZIP and extract IDs from filenames ---
     zip_bytes = await zip_file.read()
-    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as z:
-        id_to_pdf = {}
-        for filename in z.namelist():
-            if not filename.lower().endswith(".pdf"):
-                continue
-            # Extract 7–9 digit ID from filename
-            match = re.search(r"\d{7,9}", filename)
-            if match:
-                student_id = match.group(0)
-                id_to_pdf[student_id] = z.read(filename)
+    try:
+        with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as z:
+            id_to_pdf = {}
+            for filename in z.namelist():
+                if not filename.lower().endswith(".pdf"):
+                    continue
+                # Extract 7–9 digit ID from filename
+                match = re.search(r"\d{7,9}", filename)
+                if match:
+                    student_id = match.group(0)
+                    id_to_pdf[student_id] = z.read(filename)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid or corrupted ZIP file")
 
     # --- Build response ---
     results = []
     for _, row in df.iterrows():
-        sid = str(row["id"]).strip()
-        email = str(row["email"]).strip()
-        pdf_bytes = id_to_pdf.get(sid)
+        raw_id = str(row[id_col]).strip()
+        # Remove non-digit chars (like spaces or formatting)
+        student_id = re.sub(r"\D", "", raw_id)
+        email = str(row[email_col]).strip()
+        pdf_bytes = id_to_pdf.get(student_id)
 
         if pdf_bytes:
             file_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
             results.append({
-                "id": sid,
+                "id": student_id,
                 "email": email,
-                "filename": f"{sid}.pdf",
+                "filename": f"תעודת סיום {student_id}.pdf",
                 "file_base64": file_b64,
                 "status": "ready_to_send"
             })
         else:
             results.append({
-                "id": sid,
+                "id": student_id,
                 "email": email,
                 "status": "missing_certificate"
             })
