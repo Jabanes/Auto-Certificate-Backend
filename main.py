@@ -312,52 +312,63 @@ async def distribute_certificates(
     zip_file: UploadFile = File(...),
 ):
     """
-    Receives an Excel file (with columns: name, email) and a ZIP file
-    containing certificates (PDFs named after the student name).
-    Returns JSON array {name, email, filename, file_base64}.
+    Match certificates to students using ID numbers.
+    Each PDF in the ZIP should contain the student's ID in its filename.
+    Example: '301112345_אדר.pdf' or '301112345.pdf'
     """
- 
 
-    # --- Validate Excel ---
+    import io, os, base64, pandas as pd, zipfile, re
+    from fastapi import HTTPException
+
+    # --- Validate Excel file ---
     if not excel.filename.endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=400, detail="Excel file must be .xlsx or .xls")
 
-    # --- Validate ZIP ---
+    # --- Validate ZIP file ---
     if not zip_file.filename.endswith(".zip"):
         raise HTTPException(status_code=400, detail="Must upload a ZIP file of certificates")
 
-    # Read Excel
+    # --- Read Excel ---
     excel_bytes = await excel.read()
     df = pd.read_excel(io.BytesIO(excel_bytes))
-    if "name" not in df.columns or "email" not in df.columns:
-        raise HTTPException(status_code=400, detail="Excel must include 'name' and 'email' columns")
 
-    # Read ZIP contents
+    # Validate columns
+    lower_cols = [c.lower() for c in df.columns]
+    if "id" not in lower_cols or "email" not in lower_cols:
+        raise HTTPException(status_code=400, detail="Excel must include 'id' and 'email' columns")
+
+    # --- Read ZIP and extract IDs from filenames ---
     zip_bytes = await zip_file.read()
     with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as z:
-        files = {
-            os.path.splitext(os.path.basename(f))[0].strip().lower(): z.read(f)
-            for f in z.namelist()
-            if f.endswith(".pdf")
-        }
+        id_to_pdf = {}
+        for filename in z.namelist():
+            if not filename.lower().endswith(".pdf"):
+                continue
+            # Extract 7–9 digit ID from filename
+            match = re.search(r"\d{7,9}", filename)
+            if match:
+                student_id = match.group(0)
+                id_to_pdf[student_id] = z.read(filename)
 
-    # Match each student
+    # --- Build response ---
     results = []
     for _, row in df.iterrows():
-        key = str(row["name"]).strip().lower()
+        sid = str(row["id"]).strip()
         email = str(row["email"]).strip()
-        pdf_bytes = files.get(key)
+        pdf_bytes = id_to_pdf.get(sid)
+
         if pdf_bytes:
             file_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
             results.append({
-                "name": key,
+                "id": sid,
                 "email": email,
-                "filename": f"{key}.pdf",
-                "file_base64": file_b64
+                "filename": f"{sid}.pdf",
+                "file_base64": file_b64,
+                "status": "ready_to_send"
             })
         else:
             results.append({
-                "name": key,
+                "id": sid,
                 "email": email,
                 "status": "missing_certificate"
             })
