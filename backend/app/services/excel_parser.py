@@ -48,6 +48,16 @@ class ExcelParser:
         r"field1",
     ]
     
+    FIELD3_PATTERNS = [
+        r"field3",
+        r"מספר.?תעודה",
+        r"מספר.?תעודת.?סיום",
+        r"serial",
+        r"certificate.?number",
+        r"cert.?number",
+        r"מספר",
+    ]
+    
     @classmethod
     def parse_students(cls, file_bytes: bytes) -> List[Student]:
         """
@@ -85,7 +95,7 @@ class ExcelParser:
         # Find field columns using patterns
         field1_col = cls._find_column(df, normalized_cols, cls.NAME_PATTERNS)
         field2_col = cls._find_column(df, normalized_cols, cls.ID_PATTERNS)
-        field3_col = None  # Optional field
+        field3_col = cls._find_column(df, normalized_cols, cls.FIELD3_PATTERNS)  # Search for field3
         email_col = cls._find_column(df, normalized_cols, cls.EMAIL_PATTERNS)
         
         # Also check direct Hebrew mappings
@@ -100,7 +110,7 @@ class ExcelParser:
                 elif mapped == "email" and not email_col:
                     email_col = orig_col
         
-        logger.info(f"Detected columns - field1: {field1_col}, field2: {field2_col}, email: {email_col}")
+        logger.info(f"Detected columns - field1: {field1_col}, field2: {field2_col}, field3: {field3_col}, email: {email_col}")
         
         # Parse students
         students = []
@@ -116,7 +126,12 @@ class ExcelParser:
                     student_data["field2"] = clean_number(raw_id)
                 
                 if field3_col:
-                    student_data["field3"] = cls._safe_get(row, field3_col)
+                    raw_field3 = cls._safe_get(row, field3_col)
+                    # Clean field3 value - convert to string and strip whitespace
+                    if raw_field3:
+                        student_data["field3"] = str(raw_field3).strip()
+                    else:
+                        student_data["field3"] = None
                 
                 if email_col:
                     student_data["email"] = cls._safe_get(row, email_col)

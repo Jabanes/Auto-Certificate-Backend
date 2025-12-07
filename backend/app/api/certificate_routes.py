@@ -1,6 +1,7 @@
 """Certificate generation API routes."""
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from io import BytesIO
 
 import io
 
@@ -194,6 +195,205 @@ def generate_certificates_batch(payload: BatchRequest):
         "zip_size_bytes": len(zip_bytes),
         "zip_filename": zip_name
     }
+
+
+@router.post("/generate-certificates-excel")
+async def generate_certificates_excel(
+    excel: UploadFile = File(...),
+    zip_name: str = Form("certificates.zip")
+):
+    """
+    Generate certificates from Excel file, email ZIP to admin, and return ZIP as download.
+    
+    Purpose:
+    - Receives Excel file with student data
+    - Parses Excel to extract students
+    - Generates PDF files for each student
+    - Creates ZIP file
+    - Emails ZIP to ADMIN_RESULTS_EMAIL
+    - Returns ZIP file as HTTP download
+    
+    Args:
+        excel: Excel file (.xlsx or .xls) with student data
+        zip_name: Optional name for the ZIP file (default: "certificates.zip")
+        
+    Returns:
+        ZIP file download (application/zip)
+    """
+    logger.info(f"Excel file received: {excel.filename}")
+    
+    # Validate Excel file
+    if not excel.filename or not excel.filename.endswith((".xlsx", ".xls")):
+        logger.warning(f"Invalid file type: {excel.filename}")
+        raise HTTPException(
+            status_code=400,
+            detail="Excel file must be .xlsx or .xls"
+        )
+    
+    # Read Excel file
+    try:
+        excel_bytes = await excel.read()
+        logger.info(f"Excel file read: {len(excel_bytes)} bytes")
+    except Exception as e:
+        logger.error(f"Failed to read Excel file: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to read Excel file: {e}")
+    
+    # Parse students from Excel
+    try:
+        students = excel_parser.parse_students(excel_bytes)
+        logger.info(f"Parsed {len(students)} students from Excel")
+    except ValueError as e:
+        logger.error(f"Excel parsing failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error parsing Excel: {e}")
+        raise HTTPException(status_code=500, detail=f"Excel parsing error: {e}")
+    
+    if not students:
+        logger.error("No valid students found in Excel file")
+        raise HTTPException(status_code=400, detail="No valid students found in Excel file")
+    
+    # Generate certificates
+    try:
+        certificate_files = certificate_generator.create_batch(students)
+        logger.info(f"Generated {len(certificate_files)} certificates")
+    except FileNotFoundError as e:
+        logger.error(f"Template file not found: {e}")
+        raise HTTPException(status_code=500, detail=f"Template file not found: {e}")
+    except Exception as e:
+        logger.error(f"Certificate generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Certificate generation failed: {e}")
+    
+    if not certificate_files:
+        logger.error("No certificates could be generated")
+        raise HTTPException(
+            status_code=500,
+            detail="No certificates could be generated"
+        )
+    
+    # Build ZIP file
+    try:
+        zip_bytes = zip_utils.build_zip(certificate_files)
+        logger.info(f"ZIP created successfully: {len(zip_bytes)} bytes")
+    except ValueError as e:
+        logger.error(f"ZIP creation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error creating ZIP: {e}")
+        raise HTTPException(status_code=500, detail=f"ZIP creation error: {e}")
+    
+    # Send ZIP to admin email
+    logger.info("Sending ZIP to admin email...")
+    try:
+        success = email_service.send_admin_zip(zip_bytes, zip_name)
+        if success:
+            logger.info("Done sending ZIP to admin")
+        else:
+            logger.error("Failed to send ZIP to admin (check SMTP configuration)")
+    except Exception as e:
+        logger.error(f"Error sending ZIP to admin: {e}")
+        # Don't fail the request, but log the error
+    
+    # Return ZIP file as download
+    logger.info(f"Returning ZIP file download: {zip_name} ({len(zip_bytes)} bytes)")
+    return StreamingResponse(
+        BytesIO(zip_bytes),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={zip_name}"}
+    )
+
+
+@router.post("/generate-certificates-excel-dev")
+async def generate_certificates_excel_dev(
+    excel: UploadFile = File(...),
+    zip_name: str = Form("certificates.zip")
+):
+    """
+    DEV ENDPOINT: Generate certificates from Excel file and return ZIP as download (NO EMAIL).
+    
+    Purpose:
+    - Receives Excel file with student data
+    - Parses Excel to extract students
+    - Generates PDF files for each student
+    - Creates ZIP file
+    - Returns ZIP file as HTTP download (NO EMAIL SENT)
+    
+    Args:
+        excel: Excel file (.xlsx or .xls) with student data
+        zip_name: Optional name for the ZIP file (default: "certificates.zip")
+        
+    Returns:
+        ZIP file download (application/zip)
+    """
+    logger.info(f"[DEV] Excel file received: {excel.filename}")
+    
+    # Validate Excel file
+    if not excel.filename or not excel.filename.endswith((".xlsx", ".xls")):
+        logger.warning(f"Invalid file type: {excel.filename}")
+        raise HTTPException(
+            status_code=400,
+            detail="Excel file must be .xlsx or .xls"
+        )
+    
+    # Read Excel file
+    try:
+        excel_bytes = await excel.read()
+        logger.info(f"[DEV] Excel file read: {len(excel_bytes)} bytes")
+    except Exception as e:
+        logger.error(f"Failed to read Excel file: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to read Excel file: {e}")
+    
+    # Parse students from Excel
+    try:
+        students = excel_parser.parse_students(excel_bytes)
+        logger.info(f"[DEV] Parsed {len(students)} students from Excel")
+    except ValueError as e:
+        logger.error(f"Excel parsing failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error parsing Excel: {e}")
+        raise HTTPException(status_code=500, detail=f"Excel parsing error: {e}")
+    
+    if not students:
+        logger.error("No valid students found in Excel file")
+        raise HTTPException(status_code=400, detail="No valid students found in Excel file")
+    
+    # Generate certificates
+    try:
+        certificate_files = certificate_generator.create_batch(students)
+        logger.info(f"[DEV] Generated {len(certificate_files)} certificates")
+    except FileNotFoundError as e:
+        logger.error(f"Template file not found: {e}")
+        raise HTTPException(status_code=500, detail=f"Template file not found: {e}")
+    except Exception as e:
+        logger.error(f"Certificate generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Certificate generation failed: {e}")
+    
+    if not certificate_files:
+        logger.error("No certificates could be generated")
+        raise HTTPException(
+            status_code=500,
+            detail="No certificates could be generated"
+        )
+    
+    # Build ZIP file
+    try:
+        zip_bytes = zip_utils.build_zip(certificate_files)
+        logger.info(f"[DEV] ZIP created successfully: {len(zip_bytes)} bytes")
+    except ValueError as e:
+        logger.error(f"ZIP creation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error creating ZIP: {e}")
+        raise HTTPException(status_code=500, detail=f"ZIP creation error: {e}")
+    
+    # DEV ENDPOINT: Skip email sending, return ZIP directly
+    logger.info(f"[DEV] Returning ZIP file download: {zip_name} ({len(zip_bytes)} bytes)")
+    return StreamingResponse(
+        BytesIO(zip_bytes),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={zip_name}"}
+    )
 
 
 @router.post("/generate-certificate")

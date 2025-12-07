@@ -2,7 +2,8 @@
 import smtplib
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText, MIMEBase
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
 from pathlib import Path
 from typing import Optional
 

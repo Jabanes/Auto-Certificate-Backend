@@ -47,8 +47,12 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
-    # CORS
-    CORS_ORIGINS: list[str] = os.getenv("CORS_ORIGINS", "https://jabanes.github.io").split(",")
+    # CORS (stored as string, converted to list via method)
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "https://jabanes.github.io")
+    
+    def get_cors_origins(self) -> list[str]:
+        """Get CORS origins as a list."""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
     
     class Config:
         env_file = ".env"
