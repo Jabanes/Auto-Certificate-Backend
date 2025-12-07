@@ -31,7 +31,7 @@
       "top": 36,
       "bottom": 36
     },  
-    "font": "Assistant Light",
+    "font": "Assistant",
     "font_size": 30,
     "bold": true,
     "italic": false,
@@ -60,7 +60,7 @@
     "font_size": 100,
     "bold": false,
     "italic": false,
-    "fill": "black",
+    "fill": "#000000",
     "align": "center",
     "glow": {
       "enabled": false,
