@@ -34,12 +34,13 @@ def health_check():
     Health check endpoint.
     
     Returns:
-        Status message
+        Status message with environment information
     """
     return {
         "status": "ok",
         "message": "Certificate Generation Backend is running",
-        "version": "2.0.0"
+        "version": "2.0.0",
+        "frontend_url": settings.FRONTEND_URL or "not configured"
     }
 
 

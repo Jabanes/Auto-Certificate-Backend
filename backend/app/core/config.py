@@ -48,11 +48,27 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
     # CORS (stored as string, converted to list via method)
-    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "https://jabanes.github.io")
+    # Default includes development (Live Server) and production (GitHub Pages) origins
+    # Note: Both localhost and 127.0.0.1 are included as browsers treat them as different origins
+    CORS_ORIGINS: str = os.getenv(
+        "CORS_ORIGINS", 
+        "http://localhost:5500,http://localhost:5501,http://127.0.0.1:5500,http://127.0.0.1:5501,https://jabanes.github.io"
+    )
+    
+    # Frontend URL (for reference only, frontend is hosted separately)
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "")
     
     def get_cors_origins(self) -> list[str]:
         """Get CORS origins as a list."""
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_origins = []
+        for origin in origins:
+            if origin not in seen:
+                seen.add(origin)
+                unique_origins.append(origin)
+        return unique_origins
     
     class Config:
         env_file = ".env"
