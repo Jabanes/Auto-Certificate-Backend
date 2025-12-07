@@ -109,3 +109,8 @@ services:
     image: erez3535/cob-auto-certificates:v3  # Changed from v2 to v3
 ```
 
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml up -d
+
+IN PRODUCTION
+
