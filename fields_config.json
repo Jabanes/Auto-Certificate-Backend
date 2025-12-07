@@ -13,7 +13,7 @@
     "fill": "#a89b82",
     "align": "center",
     "glow": {
-      "enabled": true,
+      "enabled": false,
       "color": "#000000",
       "opacity": 0.2,
       "radius": 6
