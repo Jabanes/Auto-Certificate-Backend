@@ -33,7 +33,7 @@
     },  
     "font": "Assistant",
     "font_size": 30,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "fill": "#000000",
     "align": "center",
@@ -50,14 +50,16 @@
       650,
       1030
     ],
+    "box_width": 200,
     "margins": {
-      "left": 36,
-      "right": 36,
-      "top": 36,
-      "bottom": 36
+      "left": 20,
+      "right": 20,
+      "top": 10,
+      "bottom": 10
     },
     "font": "Assistant",
-    "font_size": 100,
+    "font_size": 20,
+    "min_font_size": 20,
     "bold": false,
     "italic": false,
     "fill": "#000000",
