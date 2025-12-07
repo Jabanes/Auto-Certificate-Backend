@@ -23,11 +23,22 @@ services:
 
       - LOG_LEVEL=INFO
 
-      # Single source of truth
-      - FRONTEND_URL=${FRONTEND_URL}
-
-      # CORS uses the same variable
-      - CORS_ORIGINS=${FRONTEND_URL}
+      # ============================================
+      # SINGLE SOURCE OF TRUTH (SSOT) - FRONTEND URL
+      # ============================================
+      # Define FRONTEND_URL here - it will be used for:
+      # 1. CORS configuration (automatically)
+      # 2. /health endpoint response
+      # 3. All backend references to frontend
+      # ============================================
+      # Development: Use localhost (Live Server)
+      # Production: Use GitHub Pages URL
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5501}
+      
+      # CORS_ORIGINS is automatically derived from FRONTEND_URL (SSOT)
+      # For development, you may want multiple origins (localhost:5500, 5501, 127.0.0.1)
+      # Set CORS_ORIGINS explicitly if needed, otherwise it uses FRONTEND_URL
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
 
     volumes:
       - ./backend/data:/app/data

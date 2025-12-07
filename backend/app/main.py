@@ -34,13 +34,14 @@ def health_check():
     Health check endpoint.
     
     Returns:
-        Status message with environment information
+        Status message with environment information including FRONTEND_URL (SSOT)
     """
     return {
         "status": "ok",
         "message": "Certificate Generation Backend is running",
         "version": "2.0.0",
-        "frontend_url": settings.FRONTEND_URL or "not configured"
+        "frontend_url": settings.FRONTEND_URL,  # SSOT: Frontend URL from backend config
+        "cors_origins": settings.get_cors_origins()  # Show which origins are allowed
     }
 
 

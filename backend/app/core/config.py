@@ -47,25 +47,36 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
-    # CORS (stored as string, converted to list via method)
-    # Default includes development (Live Server) and production (GitHub Pages) origins
-    # Note: Both localhost and 127.0.0.1 are included as browsers treat them as different origins
-    CORS_ORIGINS: str = os.getenv(
-        "CORS_ORIGINS", 
-        "http://localhost:5500,http://localhost:5501,http://127.0.0.1:5500,http://127.0.0.1:5501,https://jabanes.github.io"
-    )
+    # Frontend URL - SINGLE SOURCE OF TRUTH (SSOT)
+    # This is the ONLY place where the frontend URL should be defined
+    # Set via environment variable FRONTEND_URL
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://jabanes.github.io/Auto-Certificate-Frontend/")
     
-    # Frontend URL (for reference only, frontend is hosted separately)
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "")
+    # CORS origins - can be explicitly set, otherwise derived from FRONTEND_URL (SSOT)
+    # If CORS_ORIGINS env var is set, use it (comma-separated list)
+    # Otherwise, CORS will use FRONTEND_URL automatically in get_cors_origins()
+    CORS_ORIGINS: Optional[str] = os.getenv("CORS_ORIGINS")
     
     def get_cors_origins(self) -> list[str]:
-        """Get CORS origins as a list."""
-        origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        """
+        Get CORS origins as a list.
+        
+        SSOT Logic:
+        - If CORS_ORIGINS env var is explicitly set, use it (comma-separated)
+        - Otherwise, use FRONTEND_URL (SSOT) as the single origin
+        """
+        # If CORS_ORIGINS was explicitly set, use it
+        if self.CORS_ORIGINS:
+            origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        else:
+            # Otherwise, use FRONTEND_URL (SSOT) as the single origin
+            origins = [self.FRONTEND_URL] if self.FRONTEND_URL else []
+        
         # Remove duplicates while preserving order
         seen = set()
         unique_origins = []
         for origin in origins:
-            if origin not in seen:
+            if origin and origin not in seen:
                 seen.add(origin)
                 unique_origins.append(origin)
         return unique_origins
