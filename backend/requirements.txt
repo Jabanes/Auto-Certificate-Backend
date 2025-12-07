@@ -1,0 +1,50 @@
+# FastAPI and web server
+fastapi==0.118.0
+uvicorn[standard]==0.37.0
+python-multipart==0.0.20
+starlette==0.48.0
+
+# Data validation
+pydantic==2.11.9
+pydantic-core==2.33.2
+pydantic-settings==2.6.1
+annotated-types==0.7.0
+
+# Excel processing
+pandas==2.3.3
+openpyxl==3.1.5
+xlsxwriter==3.2.9
+
+# Image and PDF processing
+pillow==11.3.0
+pdf2image==1.17.0
+
+# RTL text support
+arabic-reshaper==3.0.0
+python-bidi==0.6.6
+
+# PowerPoint (for field extraction utility)
+python-pptx==1.0.2
+
+# Utilities
+python-dateutil==2.9.0.post0
+pytz==2025.2
+typing-extensions==4.15.0
+typing-inspection==0.4.1
+
+# HTTP client
+anyio==4.11.0
+h11==0.16.0
+idna==3.10
+sniffio==1.3.1
+
+# XML processing
+lxml==6.0.2
+et-xmlfile==2.0.0
+
+# Other
+click==8.3.0
+colorama==0.4.6
+six==1.17.0
+numpy==2.3.4
+
