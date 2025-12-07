@@ -186,12 +186,27 @@ async def distribute_certificates(
     
     # Send emails to students
     logger.info("Sending emails to students...")
-    email_results = {}
     successful_emails = 0
     failed_emails = 0
     
+    # Create a list to track updated results with status changes
+    updated_results = []
+    
     for result in results:
-        if result.status == "ready_to_send" and result.email and result.file_base64:
+        # Only send emails for students with ready_to_send status
+        if result.status == "ready_to_send":
+            if not result.email:
+                logger.error(f"Student email missing for ID {result.id}")
+                updated_results.append(result)  # Keep original status
+                failed_emails += 1
+                continue
+            
+            if not result.file_base64:
+                logger.error(f"PDF file missing for ID {result.id}")
+                updated_results.append(result)  # Keep original status
+                failed_emails += 1
+                continue
+            
             try:
                 import base64
                 pdf_bytes = base64.b64decode(result.file_base64)
@@ -203,39 +218,50 @@ async def distribute_certificates(
                     pdf_bytes,
                     filename
                 )
-                email_results[result.email] = success
+                
                 if success:
                     successful_emails += 1
+                    logger.info(f"Email sent successfully to {result.email}")
+                    # Update status to "sent"
+                    updated_result = result.model_copy(update={"status": "sent"})
+                    updated_results.append(updated_result)
                 else:
                     failed_emails += 1
                     logger.error(f"Failed to send email to {result.email}")
+                    # Keep status as "ready_to_send" if email failed
+                    updated_results.append(result)
             except Exception as e:
                 logger.error(f"Failed to send email to {result.email}: {e}")
-                email_results[result.email] = False
                 failed_emails += 1
-        elif result.status == "ready_to_send":
-            if not result.email:
-                logger.error(f"Student email missing for ID {result.id}")
-            if not result.file_base64:
-                logger.error(f"PDF file missing for ID {result.id}")
-            failed_emails += 1
+                # Keep status as "ready_to_send" if exception occurred
+                updated_results.append(result)
+        else:
+            # Keep other statuses unchanged
+            updated_results.append(result)
     
     logger.info(f"Email sending complete: {successful_emails} successful, {failed_emails} failed")
     
-    # Build response summary
-    ready_to_send = sum(1 for r in results if r.status == "ready_to_send")
-    missing = sum(1 for r in results if r.status == "missing_certificate")
-    errors = sum(1 for r in results if r.status in ["invalid_id", "encoding_error", "processing_error"])
+    # Build response summary using updated results
+    ready_to_send = sum(1 for r in updated_results if r.status == "ready_to_send")
+    sent = sum(1 for r in updated_results if r.status == "sent")
+    missing_certificates = sum(1 for r in updated_results if r.status == "missing_certificate")
+    missing_emails = sum(1 for r in updated_results if r.status == "missing_email")
+    invalid_ids = sum(1 for r in updated_results if r.status == "invalid_id")
+    other_errors = sum(1 for r in updated_results if r.status in ["encoding_error", "processing_error"])
     
     return {
         "status": "success",
-        "message": "Certificate distribution completed",
-        "total_students": len(results),
-        "ready_to_send": ready_to_send,
+        "total_students": len(updated_results),
         "emails_sent": successful_emails,
         "emails_failed": failed_emails,
-        "missing_certificates": missing,
-        "errors": errors,
-        "students": [r.model_dump() for r in results]
+        "missing_certificates": missing_certificates,
+        "students": [
+            {
+                "id": r.id,
+                "email": r.email,
+                "status": r.status
+            }
+            for r in updated_results
+        ]
     }
 

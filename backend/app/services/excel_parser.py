@@ -21,25 +21,35 @@ class ExcelParser:
         "מספר": "field2",
         "מספר זהות": "field2",
         "תעודת זהות": "field2",
+        "זהות": "field2",
+        "id": "field2",
         "אימייל": "email",
         "דואל": "email",
+        "דוא\"ל": "email",
+        "מייל": "email",
         "email": "email",
+        "mail": "email",
     }
     
     # Column name patterns for matching
     ID_PATTERNS = [
-        r"id",
+        r"^id$",
+        r"^field2$",
         r"ת.?ז",
+        r"תז",
         r"תעודת.?זהות",
         r"מספר.?זהות",
-        r"field2",
+        r"זהות",
     ]
     
     EMAIL_PATTERNS = [
-        r"mail",
+        r"^email$",
+        r"^mail$",
+        r"^field3$",
         r"אימ.?ייל",
         r"דוא.?ל",
-        r"email",
+        r"דוא\"?ל",
+        r"מייל",
     ]
     
     NAME_PATTERNS = [
@@ -98,19 +108,56 @@ class ExcelParser:
         field3_col = cls._find_column(df, normalized_cols, cls.FIELD3_PATTERNS)  # Search for field3
         email_col = cls._find_column(df, normalized_cols, cls.EMAIL_PATTERNS)
         
-        # Also check direct Hebrew mappings
+        # Also check direct Hebrew mappings (check both original and normalized)
         for orig_col in df.columns:
-            col_lower = str(orig_col).strip().lower()
-            if col_lower in cls.HEBREW_COLUMN_MAPPINGS:
+            col_str = str(orig_col).strip()
+            # Remove any zero-width characters and normalize whitespace
+            col_str = re.sub(r'[\u200b-\u200d\ufeff]', '', col_str)  # Remove zero-width chars
+            col_str = re.sub(r'\s+', ' ', col_str).strip()  # Normalize whitespace
+            
+            # For Hebrew text, lowercase doesn't change it, so check both original and lowercase
+            col_lower = col_str.lower()
+            
+            # Check exact match first (both original and lowercase)
+            if col_str in cls.HEBREW_COLUMN_MAPPINGS:
+                mapped = cls.HEBREW_COLUMN_MAPPINGS[col_str]
+                if mapped == "field1" and not field1_col:
+                    field1_col = orig_col
+                    logger.info(f"Found field1 column via exact match: '{orig_col}'")
+                elif mapped == "field2" and not field2_col:
+                    field2_col = orig_col
+                    logger.info(f"Found field2 column via exact match: '{orig_col}'")
+                elif mapped == "email" and not email_col:
+                    email_col = orig_col
+                    logger.info(f"Found email column via exact match: '{orig_col}'")
+            elif col_lower in cls.HEBREW_COLUMN_MAPPINGS:
                 mapped = cls.HEBREW_COLUMN_MAPPINGS[col_lower]
                 if mapped == "field1" and not field1_col:
                     field1_col = orig_col
+                    logger.info(f"Found field1 column via lowercase match: '{orig_col}'")
                 elif mapped == "field2" and not field2_col:
                     field2_col = orig_col
+                    logger.info(f"Found field2 column via lowercase match: '{orig_col}'")
                 elif mapped == "email" and not email_col:
                     email_col = orig_col
+                    logger.info(f"Found email column via lowercase match: '{orig_col}'")
+            
+            # Also check if column contains the Hebrew text (for partial matches)
+            for hebrew_key, mapped_value in cls.HEBREW_COLUMN_MAPPINGS.items():
+                # Check if Hebrew key is in column or vice versa
+                if hebrew_key in col_str or hebrew_key in col_lower:
+                    if mapped_value == "field1" and not field1_col:
+                        field1_col = orig_col
+                        logger.info(f"Found field1 column via partial match: '{orig_col}' contains '{hebrew_key}'")
+                    elif mapped_value == "field2" and not field2_col:
+                        field2_col = orig_col
+                        logger.info(f"Found field2 column via partial match: '{orig_col}' contains '{hebrew_key}'")
+                    elif mapped_value == "email" and not email_col:
+                        email_col = orig_col
+                        logger.info(f"Found email column via partial match: '{orig_col}' contains '{hebrew_key}'")
         
         logger.info(f"Detected columns - field1: {field1_col}, field2: {field2_col}, field3: {field3_col}, email: {email_col}")
+        logger.info(f"Available columns in Excel: {list(df.columns)}")
         
         # Parse students
         students = []
@@ -134,7 +181,19 @@ class ExcelParser:
                         student_data["field3"] = None
                 
                 if email_col:
-                    student_data["email"] = cls._safe_get(row, email_col)
+                    email_value = cls._safe_get(row, email_col)
+                    # Clean email value - strip whitespace and convert to string
+                    if email_value:
+                        email_value = str(email_value).strip()
+                        # Remove any zero-width characters
+                        email_value = re.sub(r'[\u200b-\u200d\ufeff]', '', email_value).strip()
+                        student_data["email"] = email_value if email_value else None
+                    else:
+                        student_data["email"] = None
+                        logger.warning(f"Row {idx + 1}: Email column '{email_col}' found but value is empty")
+                else:
+                    logger.warning(f"Row {idx + 1}: No email column detected")
+                    student_data["email"] = None
                 
                 # Create student object (will validate)
                 student = Student(**student_data)

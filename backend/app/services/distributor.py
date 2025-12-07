@@ -95,20 +95,30 @@ class Distributor:
             DistributionResult object
         """
         student_id = student.field2
+        student_email = student.email or ""
         
+        # Check for missing email first
+        if not student_email or not student_email.strip():
+            return DistributionResult(
+                id=student_id or "",
+                email="",
+                status="missing_email"
+            )
+        
+        # Check for invalid/missing ID
         if not student_id:
             return DistributionResult(
                 id="",
-                email=student.email or "",
+                email=student_email,
                 status="invalid_id"
             )
         
-        # Clean ID to match format
+        # Clean ID to match format (extract digits only)
         cleaned_id = clean_number(student_id)
         if not cleaned_id:
             return DistributionResult(
                 id=student_id,
-                email=student.email or "",
+                email=student_email,
                 status="invalid_id"
             )
         
@@ -118,7 +128,7 @@ class Distributor:
         if not pdf_bytes:
             return DistributionResult(
                 id=cleaned_id,
-                email=student.email or "",
+                email=student_email,
                 status="missing_certificate"
             )
         
@@ -129,7 +139,7 @@ class Distributor:
             
             return DistributionResult(
                 id=cleaned_id,
-                email=student.email or "",
+                email=student_email,
                 filename=filename,
                 file_base64=file_b64,
                 status="ready_to_send"
@@ -138,7 +148,7 @@ class Distributor:
             logger.warning(f"Base64 encoding failed for student {cleaned_id}: {e}")
             return DistributionResult(
                 id=cleaned_id,
-                email=student.email or "",
+                email=student_email,
                 status="encoding_error"
             )
 

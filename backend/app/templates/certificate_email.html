@@ -1,58 +1,56 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>תעודת סיום</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            direction: rtl;
-            text-align: right;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 20px;
-        }
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .content {
-            line-height: 1.6;
-            color: #333333;
-            margin-bottom: 20px;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eeeeee;
-            font-size: 12px;
-            color: #666666;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>תעודת סיום</h1>
-        </div>
-        <div class="content">
-            {{EMAIL_BODY}}
-        </div>
-        <div class="footer">
-            <p>COB Academy</p>
-            <p>בברכה,<br>צוות COB Academy</p>
-        </div>
-    </div>
-</body>
-</html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>תעודת סיום COB</title>
+  </head>
+  <body
+    dir="rtl"
+    style="margin:0; padding:0; background-color:#f4f6f8; font-family:Assistant, Arial, sans-serif; color:#333;"
+    bgcolor="#f4f6f8"
+  >
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f4f6f8" style="width:100%; background-color:#f4f6f8; padding:40px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="640" bgcolor="#ffffff" style="background-color:#ffffff; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.08); padding:40px 48px;">
 
+            <tr>
+              <td style="border-bottom:2px solid #3498db; padding-bottom:12px; margin-bottom:24px;" bgcolor="#ffffff">
+                <table role="presentation" width="100%">
+                  <tr>
+                    <td align="right" valign="middle">
+                      <h1 style="font-size:26px; color:#3498db; font-weight:700; margin:0; font-family:Assistant, Arial, sans-serif;">
+                        תעודת סיום COB
+                      </h1>
+                    </td>
+                    <td align="left" valign="middle" style="width:70px;">
+                      <img
+                        src="https://connectedbusinesses.co.il/wp-content/uploads/2025/10/WhatsApp-Image-2025-10-29-at-13.44.38.webp"
+                        width="55"
+                        height="55"
+                        style="display:block; width:55px; height:55px; border:0; border-radius:6px; object-fit:contain;"
+                      />
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="font-size:16px; line-height:1.8; text-align:right; padding-top:24px;">
+                {{EMAIL_BODY}}
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="font-size:13px; color:#777; padding-top:40px; text-align:center;">
+                מייל זה נשלח באופן אוטומטי ממערכת ניהול התעודות של COB
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

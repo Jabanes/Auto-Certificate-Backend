@@ -11,7 +11,7 @@ class DistributionResult(BaseModel):
     email: str = Field(..., description="Student email")
     filename: Optional[str] = Field(None, description="Certificate filename")
     file_base64: Optional[str] = Field(None, description="Base64 encoded PDF content")
-    status: str = Field(..., description="Status: ready_to_send, missing_certificate, invalid_id, encoding_error, processing_error")
+    status: str = Field(..., description="Status: ready_to_send, sent, missing_certificate, missing_email, invalid_id, encoding_error, processing_error")
     
     class Config:
         json_schema_extra = {
